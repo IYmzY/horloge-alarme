@@ -1,8 +1,8 @@
 import "./style.scss";
 
-/* =========================================
+/* =========================
    Utils & date
-========================================= */
+========================= */
 const pad = (n: number) => n.toString().padStart(2, "0");
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -13,9 +13,9 @@ const dateFmt = new Intl.DateTimeFormat("fr-FR", {
   day: "numeric",
 });
 
-/* =========================================
+/* =========================
    DOM
-========================================= */
+========================= */
 const appEl = document.getElementById("app") as HTMLElement;
 
 const timeEl = document.getElementById("time") as HTMLElement;
@@ -31,9 +31,6 @@ const alarmTimeInput = document.getElementById("alarmTime") as HTMLInputElement;
 const alarmLabelInput = document.getElementById(
   "alarmLabel"
 ) as HTMLInputElement;
-const selectedSoundInput = document.getElementById(
-  "selectedSound"
-) as HTMLInputElement;
 
 const setBtn = document.getElementById("setBtn") as HTMLButtonElement;
 
@@ -46,20 +43,18 @@ const activeLabelEl = document.getElementById("activeLabel") as HTMLElement;
 const activeSoundEl = document.getElementById("activeSound") as HTMLElement;
 
 const soundsSection = document.getElementById("sounds") as HTMLElement;
-const carouselWrap = soundsSection.querySelector(
-  ".carousel-wrap"
+const viewerEl = soundsSection.querySelector(".sound-viewer") as HTMLElement;
+const windowEl = viewerEl.querySelector(".slide-window") as HTMLElement;
+const cards = Array.from(windowEl.querySelectorAll<HTMLElement>(".sound-card"));
+const prevBtn = viewerEl.querySelector(".nav.prev") as HTMLButtonElement;
+const nextBtn = viewerEl.querySelector(".nav.next") as HTMLButtonButton;
+const currentTitleEl = document.getElementById(
+  "currentSoundTitle"
 ) as HTMLElement;
-const carouselEl = soundsSection.querySelector(".carousel") as HTMLElement;
-const prevBtn = carouselWrap.querySelector(
-  ".carousel-nav.prev"
-) as HTMLButtonElement;
-const nextBtn = carouselWrap.querySelector(
-  ".carousel-nav.next"
-) as HTMLButtonElement;
 
-/* =========================================
+/* =========================
    State
-========================================= */
+========================= */
 type AppState = "inactive" | "active";
 
 type SoundKey =
@@ -112,11 +107,10 @@ type AlarmState = {
 
 let uiState: AppState = "inactive";
 let alarm: AlarmState | null = null;
-let selectedSound: SoundKey = DEFAULT_SOUND;
 
-/* =========================================
+/* =========================
    Clock (tick aligné)
-========================================= */
+========================= */
 let lastDay = -1;
 
 function renderClock(now = new Date()) {
@@ -141,9 +135,9 @@ function tickAligned() {
   setTimeout(tickAligned, delay);
 }
 
-/* =========================================
+/* =========================
    Alarm scheduling (robuste)
-========================================= */
+========================= */
 function computeNextTrigger(hhmm: string, from = new Date()): Date {
   const [hh, mm] = hhmm.split(":").map(Number);
   const d = new Date(from);
@@ -191,9 +185,9 @@ function setAppState(next: AppState) {
   }
 }
 
-/* =========================================
-   WebAudio (lazy) + loader de samples
-========================================= */
+/* =========================
+   WebAudio (lazy) + loader
+========================= */
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 
@@ -207,7 +201,7 @@ async function ensureAudioContext(): Promise<AudioContext> {
   if (ctx.state === "suspended") await ctx.resume();
   if (!masterGain) {
     masterGain = ctx.createGain();
-    masterGain.gain.value = 1.0; // volume global (ajoute un slider si besoin)
+    masterGain.gain.value = 1.0;
     masterGain.connect(ctx.destination);
   }
   return ctx;
@@ -232,48 +226,85 @@ async function loadSoundBuffer(key: SoundKey): Promise<AudioBuffer | null> {
   }
 }
 
-/* =========================================
-   Preview & Ring (avec samples)
-========================================= */
+/* =========================
+   Preview toggle & Ring
+========================= */
 let currentPreviewNode: AudioBufferSourceNode | null = null;
-let ringing = false;
-let ringNode: AudioBufferSourceNode | null = null;
-let autoStopId: number | null = null;
+let currentPreviewKey: SoundKey | null = null;
+let currentPreviewBtn: HTMLButtonElement | null = null;
+
+function markBtnPlaying(btn: HTMLButtonElement) {
+  btn.classList.add("is-playing");
+  btn.setAttribute("aria-pressed", "true");
+  btn.textContent = "■ Stop";
+}
+function unmarkBtnPlaying(btn: HTMLButtonElement) {
+  btn.classList.remove("is-playing");
+  btn.removeAttribute("aria-pressed");
+  btn.textContent = "▶︎ Préécouter";
+}
 
 function stopPreview() {
   try {
     currentPreviewNode?.stop();
   } catch {}
   currentPreviewNode = null;
+  currentPreviewKey = null;
+  if (currentPreviewBtn) {
+    unmarkBtnPlaying(currentPreviewBtn);
+    currentPreviewBtn = null;
+  }
 }
 
-async function previewSound(key: SoundKey) {
+async function previewToggle(key: SoundKey, btn: HTMLButtonElement) {
   await ensureAudioContext();
+
+  // si on re-clique sur le même bouton pendant lecture => stop
+  if (currentPreviewNode && currentPreviewKey === key) {
+    stopPreview();
+    return;
+  }
+
+  // sinon: coupe toute autre préécoute + coupe une éventuelle alarme
   stopPreview();
+  if (ringing) stopRinging();
+
   const buf = await loadSoundBuffer(key);
   if (!buf) return;
+
   const src = audioCtx!.createBufferSource();
   src.buffer = buf;
   src.connect(masterGain!);
   src.start(0);
+
   currentPreviewNode = src;
+  currentPreviewKey = key;
+  currentPreviewBtn = btn;
+  markBtnPlaying(btn);
+
   src.onended = () => {
-    if (currentPreviewNode === src) currentPreviewNode = null;
+    if (currentPreviewNode === src) stopPreview();
   };
 }
+
+let ringing = false;
+let ringNode: AudioBufferSourceNode | null = null;
+let autoStopId: number | null = null;
 
 async function ringNowWithSample(key: SoundKey, label?: string) {
   if (ringing) return;
   ringing = true;
   await ensureAudioContext();
 
+  // coupe toute préécoute
+  stopPreview();
+
   statusEl.textContent = `⏰ Alarme !${label ? " — " + label : ""}`;
 
   const buf = await loadSoundBuffer(key);
   if (!buf) {
-    // fallback tout simple si le sample est indispo
-    statusEl.textContent += " (sample indisponible)";
-    autoStopId = window.setTimeout(stopRinging, 5000);
+    // échec de sample → stop rapide
+    autoStopId = window.setTimeout(stopRinging, 4000);
     return;
   }
 
@@ -298,13 +329,77 @@ function stopRinging() {
     clearTimeout(autoStopId);
     autoStopId = null;
   }
-  // coupe aussi un éventuel preview en cours
+  // sécurité : coupe aussi un preview en cours
   stopPreview();
 }
 
-/* =========================================
+/* =========================
+   Carousel (1 slide visible)
+========================= */
+let currentIndex = Math.max(
+  0,
+  cards.findIndex((c) => c.classList.contains("is-active"))
+);
+if (currentIndex < 0) currentIndex = 0;
+
+function keyAt(i: number): SoundKey {
+  return cards[i].dataset.key as SoundKey;
+}
+
+function setAria(card: HTMLElement, active: boolean) {
+  card.setAttribute("aria-hidden", active ? "false" : "true");
+}
+
+function applySlideClasses(prev: number, next: number, dir: "next" | "prev") {
+  const prevEl = cards[prev];
+  const nextEl = cards[next];
+
+  // reset classes
+  cards.forEach((c) =>
+    c.classList.remove("from-left", "from-right", "is-active")
+  );
+
+  // préparation directionnelle
+  nextEl.classList.add(dir === "next" ? "from-right" : "from-left");
+  setAria(prevEl, false);
+  setAria(nextEl, true);
+
+  // entrée
+  nextEl.classList.add("is-active");
+  // forcer un reflow pour que la transition prenne bien
+  void nextEl.offsetWidth;
+  nextEl.classList.remove("from-right", "from-left");
+
+  // sortie
+  prevEl.classList.add(dir === "next" ? "from-left" : "from-right");
+}
+
+function goTo(index: number, dir: "next" | "prev") {
+  if (index === currentIndex) return;
+
+  // couper un éventuel preview (et libeller le bouton de l'ancienne slide)
+  stopPreview();
+
+  const prev = currentIndex;
+  const next = (index + cards.length) % cards.length;
+  currentIndex = next;
+
+  applySlideClasses(prev, next, dir);
+
+  // MAJ du titre courant
+  currentTitleEl.textContent = soundTitle(keyAt(currentIndex));
+}
+
+function goNext() {
+  goTo((currentIndex + 1) % cards.length, "next");
+}
+function goPrev() {
+  goTo((currentIndex - 1 + cards.length) % cards.length, "prev");
+}
+
+/* =========================
    Alarm flow (inactive <-> active)
-========================================= */
+========================= */
 function setAlarm() {
   const time = alarmTimeInput.value;
   if (!time) {
@@ -312,25 +407,25 @@ function setAlarm() {
     return;
   }
   const label = alarmLabelInput.value.trim() || undefined;
+  const soundKey = keyAt(currentIndex);
 
   alarm = {
     time,
     label,
-    soundKey: selectedSound,
+    soundKey,
     active: true,
     nextTrigger: computeNextTrigger(time, new Date()),
   };
 
-  // maj panneau actif
+  // panneau actif
   activeTimeEl.textContent = alarm.time;
   activeLabelEl.textContent = alarm.label ? `— ${alarm.label}` : "";
   activeSoundEl.textContent = soundTitle(alarm.soundKey);
 
-  // UI → active
   setAppState("active");
   updateStatus(new Date());
 
-  // gesture utilisateur : tentative de déblocage audio
+  // geste utilisateur → tente de débloquer l'audio
   ensureAudioContext().catch(() => {});
 }
 
@@ -342,9 +437,9 @@ function cancelAlarm() {
   statusEl.textContent = "—";
 }
 
-/* =========================================
+/* =========================
    Check alarm (throttling-proof)
-========================================= */
+========================= */
 function checkAlarm(now = new Date()) {
   if (!alarm || !alarm.active) return;
   if (now >= alarm.nextTrigger) {
@@ -358,104 +453,63 @@ function checkAlarm(now = new Date()) {
   }
 }
 
-/* =========================================
-   Carousel (preview / choose / nav)
-========================================= */
-function setSelectedSoundCard(key: SoundKey) {
-  const cards = carouselEl.querySelectorAll<HTMLElement>(".sound-card");
-  cards.forEach((card) => {
-    const match = card.dataset.key === key;
-    card.classList.toggle("is-selected", match);
-    card.setAttribute("aria-selected", match ? "true" : "false");
-  });
-}
-
-function handleCarouselClick(e: Event) {
-  const target = e.target as HTMLElement;
-  const card = (target.closest(".sound-card") as HTMLElement) || null;
-  if (!card) return;
-  const key = card.dataset.key as SoundKey;
-
-  if (target.matches('[data-action="preview"]')) {
-    previewSound(key).catch(() => {});
-    return;
-  }
-  if (target.matches('[data-action="choose"]')) {
-    selectedSound = key;
-    setSelectedSoundCard(key);
-    selectedSoundInput.value = soundTitle(key);
-    // petit feedback visuel possible ici si tu veux
-    return;
-  }
-}
-
-function scrollCarousel(direction: "prev" | "next") {
-  const card = carouselEl.querySelector<HTMLElement>(".sound-card");
-  const step = card ? card.getBoundingClientRect().width + 12 : 240;
-  const delta = direction === "next" ? step : -step;
-  carouselEl.scrollBy({ left: delta, behavior: "smooth" });
-}
-
-function updateCarouselNavDisabled() {
-  // (optionnel) désactive les flèches quand on est au bord
-  const maxScroll = carouselEl.scrollWidth - carouselEl.clientWidth;
-  const left = Math.round(carouselEl.scrollLeft);
-  prevBtn.disabled = left <= 0;
-  nextBtn.disabled = left >= maxScroll;
-}
-
-/* =========================================
+/* =========================
    Events
-========================================= */
+========================= */
+// Programmer / Annuler
 setBtn.addEventListener("click", () => {
-  if (uiState === "active") return; // pas d’overwrite
+  if (uiState === "active") return;
   setAlarm();
 });
-
 cancelBtn.addEventListener("click", () => {
   if (uiState === "inactive") return;
   cancelAlarm();
 });
 
-carouselEl.addEventListener("click", handleCarouselClick);
+// Carousel nav
+prevBtn.addEventListener("click", () => goPrev());
+nextBtn.addEventListener("click", () => goNext());
 
-prevBtn.addEventListener("click", () => {
-  scrollCarousel("prev");
-  setTimeout(updateCarouselNavDisabled, 250);
-});
-nextBtn.addEventListener("click", () => {
-  scrollCarousel("next");
-  setTimeout(updateCarouselNavDisabled, 250);
-});
-carouselEl.addEventListener("scroll", () => {
-  // throttle léger
-  window.requestAnimationFrame(updateCarouselNavDisabled);
+// Preview toggle (délégué sur la fenêtre de slide)
+windowEl.addEventListener("click", (e) => {
+  const target = e.target as HTMLElement;
+  if (!target.matches(".btn-preview")) return;
+  const btn = target as HTMLButtonElement;
+  const active = cards[currentIndex];
+  const key = active.dataset.key as SoundKey;
+  previewToggle(key, btn).catch(() => {});
 });
 
-// ESC pour couper la sonnerie
+// ESC coupe tout
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") stopRinging();
+  if (e.key === "Escape") {
+    stopPreview();
+    stopRinging();
+  }
 });
 
-// Recalage instantané au retour onglet
+// Recalage au retour onglet
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     const now = new Date();
     renderClock(now);
     checkAlarm(now);
     updateStatus(now);
-    updateCarouselNavDisabled();
   }
 });
 
-/* =========================================
+/* =========================
    Boot
-========================================= */
-function initSelectedFromDOM() {
-  const card = carouselEl.querySelector<HTMLElement>(".sound-card.is-selected");
-  selectedSound = (card?.dataset.key as SoundKey) ?? DEFAULT_SOUND;
-  setSelectedSoundCard(selectedSound);
-  selectedSoundInput.value = soundTitle(selectedSound);
+========================= */
+function initFromDOM() {
+  // s'assure que l'état initial correspond à la carte marquée .is-active
+  const initial = Math.max(
+    0,
+    cards.findIndex((c) => c.classList.contains("is-active"))
+  );
+  currentIndex = initial >= 0 ? initial : 0;
+  cards.forEach((c, i) => setAria(c, i === currentIndex));
+  currentTitleEl.textContent = soundTitle(keyAt(currentIndex));
 }
 
 function initUI() {
@@ -464,9 +518,8 @@ function initUI() {
   statusEl.textContent = "—";
 }
 
-initSelectedFromDOM();
+initFromDOM();
 initUI();
 renderClock();
 updateStatus();
-updateCarouselNavDisabled();
 tickAligned();

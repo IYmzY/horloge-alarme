@@ -1,26 +1,23 @@
 @use "sass:color";
 
-/* ========= Theme (dark minimal) ========= */
-$bg: #0c0c0f; // fond inactif
-$bg-active: #0b0f18; // fond quand alarme active (légèrement bleuté)
-$panel: #121317; // cartes
-$stroke: #24262c; // bordures
-$fg: #f5f7fa; // texte principal
-$muted: #a6adb9; // texte secondaire
-$accent: #ffffff; // action primaire (flat blanc)
-$danger: #ff4d4d; // action danger
-$ink: #0b0b0b; // noir utile pour contrastes
-$shadow: rgba(0, 0, 0, 0.5);
+/* ==== Theme (dark minimal) ==== */
+$bg: #0c0c0f;
+$bg-active: #0b0f18;
+$panel: #121317;
+$stroke: #24262c;
+$fg: #f5f7fa;
+$muted: #a6adb9;
+$accent: #ffffff;
+$danger: #ff4d4d;
+$ink: #0b0b0b;
 
 $font: "Inter", "SF Pro Text", "Segoe UI", Roboto, system-ui, -apple-system,
   Arial, sans-serif;
-// Optionnel: @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap");
 
-/* ========= Utils ========= */
-@function ring-shadow($c, $a: 0.22) {
+@function ring($c, $a: 0.22) {
   @return 0 0 0 3px color.change($c, $alpha: $a);
 }
-@function hover($base, $ratio: 12%) {
+@function hover($base, $ratio: 10%) {
   @return color.mix(#ffffff, $base, $ratio);
 }
 
@@ -43,7 +40,6 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
-
   background: radial-gradient(
     1000px 700px at 20% 0%,
     #0e1016 0%,
@@ -53,7 +49,6 @@ body {
   transition: background 0.4s ease;
 }
 
-/* Fond dynamique selon état global */
 body:has(#app.alarm-active) {
   background: radial-gradient(
     1100px 750px at 18% 0%,
@@ -63,14 +58,14 @@ body:has(#app.alarm-active) {
   );
 }
 
-/* ========= Layout ========= */
+/* ==== Layout ==== */
 main#app {
   width: min(900px, 100%);
   display: grid;
   gap: 24px;
 }
 
-/* ========= Clock ========= */
+/* ==== Clock ==== */
 #clock {
   background: $panel;
   border: 1px solid $stroke;
@@ -90,7 +85,7 @@ main#app {
   }
 }
 
-/* ========= Alarm Card ========= */
+/* ==== Alarm ==== */
 #alarm {
   background: $panel;
   border: 1px solid $stroke;
@@ -104,11 +99,9 @@ main#app {
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
-
     h2 {
       font-size: 1.2rem;
       font-weight: 700;
-      letter-spacing: 0.01em;
     }
     .state-text {
       color: $muted;
@@ -121,11 +114,9 @@ main#app {
     font-size: 0.95rem;
   }
 
-  /* Form (inactive) */
   .alarm-form {
     display: grid;
     gap: 12px;
-
     .row {
       display: grid;
       gap: 12px;
@@ -142,12 +133,10 @@ main#app {
     .field {
       display: grid;
       gap: 6px;
-
       label {
         color: $muted;
         font-size: 0.92rem;
       }
-
       input {
         background: #0f1116;
         color: $fg;
@@ -155,18 +144,11 @@ main#app {
         border-radius: 12px;
         padding: 12px 14px;
         font-size: 1rem;
-        transition: border-color 0.18s ease, box-shadow 0.18s ease;
-
+        transition: border-color 0.18s, box-shadow 0.18s;
         &:focus {
           outline: none;
           border-color: hover($stroke, 22%);
-          box-shadow: ring-shadow($accent, 0.16);
-        }
-
-        &[readonly] {
-          color: $muted;
-          cursor: default;
-          user-select: none;
+          box-shadow: ring($accent, 0.16);
         }
       }
     }
@@ -179,39 +161,23 @@ main#app {
     }
   }
 
-  /* Panel (active) */
   .alarm-active-panel {
     display: grid;
     gap: 12px;
-
-    .summary {
-      p {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      strong {
-        font-weight: 800;
-      }
-      .muted {
-        color: $muted;
-      }
-      .sep {
-        color: $muted;
-        opacity: 0.6;
-      }
-    }
-
-    .actions {
+    .summary p {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
+    }
+    .summary .muted,
+    .summary .sep {
+      color: $muted;
     }
   }
 }
 
-/* ========= Buttons (flat) ========= */
+/* ==== Buttons ==== */
 button {
   padding: 12px 16px;
   border-radius: 12px;
@@ -219,12 +185,10 @@ button {
   background: transparent;
   color: $fg;
   font-weight: 700;
-  letter-spacing: 0.01em;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.06s ease, background-color 0.18s ease,
-    border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-
+  transition: transform 0.06s, background-color 0.18s, border-color 0.18s,
+    box-shadow 0.18s;
   &:active {
     transform: translateY(1px);
   }
@@ -244,12 +208,10 @@ button {
   }
   &:focus {
     outline: none;
-    box-shadow: ring-shadow($accent, 0.22);
+    box-shadow: ring($accent, 0.22);
   }
 }
-
-#cancelBtn,
-#clearBtn {
+#cancelBtn {
   background-color: $danger;
   color: #fff;
   border-color: color.mix($danger, $stroke, 48%);
@@ -259,11 +221,11 @@ button {
   }
   &:focus {
     outline: none;
-    box-shadow: ring-shadow($danger, 0.22);
+    box-shadow: ring($danger, 0.22);
   }
 }
 
-/* ========= Sounds (carousel) ========= */
+/* ==== Sounds (1 slide visible) ==== */
 #sounds {
   background: $panel;
   border: 1px solid $stroke;
@@ -287,31 +249,28 @@ button {
     }
   }
 
-  /* Wrapper + nav */
-  .carousel-wrap {
+  .current-note {
+    color: $muted;
+    font-size: 0.95rem;
+  }
+
+  .sound-viewer {
     position: relative;
     display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
+    gap: 8px;
 
-    .carousel-nav {
-      position: absolute;
-      top: 50%;
-      translate: 0 -50%;
-      z-index: 2;
-
+    .nav {
       height: 40px;
       width: 40px;
       border-radius: 50%;
       border: 1px solid $stroke;
       background: color.change(#ffffff, $alpha: 0.06);
-      backdrop-filter: blur(4px);
       color: $fg;
       display: grid;
       place-items: center;
-      box-shadow: 0 6px 16px $shadow;
-      transition: background-color 0.18s ease, border-color 0.18s ease,
-        transform 0.06s ease;
-
+      transition: background-color 0.18s, border-color 0.18s, transform 0.06s;
       &:hover {
         background: color.change(#ffffff, $alpha: 0.12);
       }
@@ -320,85 +279,41 @@ button {
       }
       &:focus {
         outline: none;
-        box-shadow: ring-shadow($accent, 0.18);
-      }
-
-      &.prev {
-        left: -8px;
-      }
-      &.next {
-        right: -8px;
-      }
-
-      @media (max-width: 480px) {
-        &.prev {
-          left: 4px;
-        }
-        &.next {
-          right: 4px;
-        }
+        box-shadow: ring($accent, 0.18);
       }
     }
-  }
 
-  /* Carrousel fluide */
-  .carousel {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(190px, 1fr);
-    gap: 12px;
-
-    overflow-x: auto;
-    padding: 4px 6px 8px;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth; /* fluidité */
-    scroll-padding: 6px;
-
-    /* inertie (mobile) */
-    -webkit-overflow-scrolling: touch;
-
-    /* scrollbar discrète */
-    &::-webkit-scrollbar {
-      height: 8px;
+    .slide-window {
+      position: relative;
+      overflow: hidden;
+      min-height: 150px; /* hauteur stable */
     }
-    &::-webkit-scrollbar-track {
+
+    .sound-card {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      gap: 10px;
+      align-content: center;
+      justify-items: center;
       background: #0f1116;
-      border-radius: 999px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: #2b2f36;
-      border-radius: 999px;
-    }
-  }
+      border: 1px solid $stroke;
+      border-radius: 14px;
+      padding: 16px;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: transform 0.25s ease, opacity 0.25s ease,
+        background-color 0.18s;
 
-  .sound-card {
-    scroll-snap-align: start;
-    background: #0f1116;
-    border: 1px solid $stroke;
-    border-radius: 14px;
-    padding: 14px;
-    display: grid;
-    gap: 10px;
-    align-content: start;
-    transition: border-color 0.18s ease, box-shadow 0.18s ease,
-      transform 0.08s ease, background-color 0.18s ease;
+      .icon {
+        font-size: 1.6rem;
+      }
+      .title {
+        font-size: 1rem;
+        font-weight: 700;
+      }
 
-    .icon {
-      font-size: 1.4rem;
-    }
-    .title {
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    .card-actions {
-      margin-top: 2px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      .btn-test,
-      .btn-choose {
+      .btn-preview {
         padding: 10px 12px;
         border-radius: 10px;
         border: 1px solid $stroke;
@@ -406,31 +321,38 @@ button {
         color: $fg;
         font-weight: 600;
         font-size: 0.95rem;
-
+        transition: background-color 0.18s, border-color 0.18s, box-shadow 0.18s;
         &:hover {
           background: color.change(#ffffff, $alpha: 0.06);
         }
         &:focus {
           outline: none;
-          box-shadow: ring-shadow($accent, 0.18);
+          box-shadow: ring($accent, 0.18);
+        }
+        &.is-playing {
+          background: color.change(#ffffff, $alpha: 0.12);
+          border-color: color.mix(#ffffff, $stroke, 28%);
         }
       }
-    }
 
-    &:hover {
-      background: #10131a;
-    }
-
-    &.is-selected,
-    &[aria-selected="true"] {
-      border-color: color.mix($accent, $stroke, 55%);
-      box-shadow: 0 0 0 3px color.change($accent, $alpha: 0.12);
-      transform: translateY(-1px);
+      &[aria-hidden="true"] {
+        pointer-events: none;
+      }
+      &.is-active {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      &.from-left {
+        transform: translateX(-100%);
+      }
+      &.from-right {
+        transform: translateX(100%);
+      }
     }
   }
 }
 
-/* ========= Global states ========= */
+/* ==== Global states ==== */
 #app.alarm-active #alarm {
   outline: 2px solid color.change(#6aa2ff, $alpha: 0.16);
   outline-offset: 0;
@@ -439,7 +361,7 @@ button {
   text-shadow: 0 0 24px color.change(#6aa2ff, $alpha: 0.24);
 }
 
-/* ========= Small helpers ========= */
+/* ==== Helpers ==== */
 .muted {
   color: $muted;
 }
