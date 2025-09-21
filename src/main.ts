@@ -72,6 +72,8 @@ const toastStopBtn = document.getElementById(
   "toastStopBtn"
 ) as HTMLButtonElement;
 
+const volumeValueEl = document.getElementById("volumeValue") as HTMLElement;
+
 /* =========================
    State
 ========================= */
@@ -647,6 +649,9 @@ function applyVolumeFromSlider() {
     localStorage.setItem(LS_VOL, String(v));
   } catch {}
   if (masterGain) masterGain.gain.value = sliderToGain(v);
+
+  // update UI
+  if (volumeValueEl) volumeValueEl.textContent = `${v}%`;
 }
 
 /* =========================
@@ -719,6 +724,7 @@ function restoreState() {
   if (volumeEl) {
     const v = Number(localStorage.getItem(LS_VOL) ?? "90");
     volumeEl.value = isNaN(v) ? "90" : String(v);
+    if (volumeValueEl) volumeValueEl.textContent = `${v}%`;
   }
 
   // index son
