@@ -6,6 +6,20 @@
     <title>Horloge + Alarme</title>
   </head>
   <body>
+    <!-- Toast de sonnerie (affiché pendant le ring) -->
+    <div id="ringToast" class="ring-toast" hidden>
+      <div class="ring-toast__content">
+        <div class="ring-toast__text">
+          <span class="bell">⏰</span>
+          <span id="ringToastText">Alarme !</span>
+        </div>
+        <div class="ring-toast__actions">
+          <button id="toastSnoozeBtn" type="button">Snooze 5 min</button>
+          <button id="toastStopBtn" type="button">Stop</button>
+        </div>
+      </div>
+    </div>
+
     <main id="app" class="alarm-inactive" aria-live="polite">
       <!-- Horloge -->
       <section id="clock" aria-label="Horloge">

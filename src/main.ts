@@ -40,7 +40,7 @@ const alarmActivePanel = document.getElementById(
 const cancelBtn = document.getElementById("cancelBtn") as HTMLButtonElement;
 const snoozeBtn = document.getElementById(
   "snoozeBtn"
-) as HTMLButtonElement | null; // optionnel
+) as HTMLButtonElement | null;
 const activeTimeEl = document.getElementById("activeTime") as HTMLElement;
 const activeLabelEl = document.getElementById("activeLabel") as HTMLElement;
 const activeSoundEl = document.getElementById("activeSound") as HTMLElement;
@@ -55,7 +55,15 @@ const currentTitleEl = document.getElementById(
   "currentSoundTitle"
 ) as HTMLElement;
 
-const volumeEl = document.getElementById("volume") as HTMLInputElement | null; // optionnel
+const volumeEl = document.getElementById("volume") as HTMLInputElement | null;
+const ringToast = document.getElementById("ringToast") as HTMLDivElement;
+const ringToastText = document.getElementById("ringToastText") as HTMLElement;
+const toastSnoozeBtn = document.getElementById(
+  "toastSnoozeBtn"
+) as HTMLButtonElement;
+const toastStopBtn = document.getElementById(
+  "toastStopBtn"
+) as HTMLButtonElement;
 
 /* =========================
    State
@@ -297,6 +305,69 @@ async function loadSoundBuffer(key: SoundKey): Promise<AudioBuffer | null> {
 }
 
 /* =========================
+   Notifications & attention grabbers
+========================= */
+function canNotify(): boolean {
+  return "Notification" in window && Notification.permission !== "denied";
+}
+
+async function ensureNotifyPermission(): Promise<void> {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    try {
+      await Notification.requestPermission();
+    } catch {}
+  }
+}
+
+let titleBlinkId: number | null = null;
+const originalTitle = document.title;
+
+function startTitleBlink(text = "⏰ Alarme !") {
+  stopTitleBlink();
+  let on = false;
+  titleBlinkId = window.setInterval(() => {
+    document.title = on ? text : originalTitle;
+    on = !on;
+  }, 900);
+}
+function stopTitleBlink() {
+  if (titleBlinkId) {
+    clearInterval(titleBlinkId);
+    titleBlinkId = null;
+  }
+  document.title = originalTitle;
+}
+
+function showRingToast(label?: string) {
+  if (!ringToast || !ringToastText) return;
+  ringToastText.textContent = `Alarme${label ? " — " + label : ""}`;
+  ringToast.hidden = false;
+  document.body.classList.add("modal-open");
+}
+function hideRingToast() {
+  if (ringToast) ringToast.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+function showSystemNotification(label?: string) {
+  if (!canNotify() || document.visibilityState === "visible") return;
+  try {
+    const n = new Notification("⏰ Alarme", {
+      body: label ? `— ${label}` : "Il est l'heure !",
+      icon: "/favicon.ico",
+      silent: false,
+      tag: "alarm-ring", // ok pour regrouper
+      requireInteraction: true, // reste affichée jusqu'au clic (supporté par la plupart des Chromium)
+    });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+  } catch {}
+}
+
+/* =========================
    Preview toggle & Ring
 ========================= */
 let currentPreviewNode: AudioBufferSourceNode | null = null;
@@ -367,6 +438,14 @@ async function ringNowWithSample(key: SoundKey, label?: string) {
   stopPreview(); // pas de chevauchement
 
   statusEl.textContent = `⏰ Alarme !${label ? " — " + label : ""}`;
+  showRingToast(label);
+  startTitleBlink();
+  showSystemNotification(label);
+  if ("vibrate" in navigator) {
+    try {
+      navigator.vibrate([200, 100, 200]);
+    } catch {}
+  }
 
   const buf = await loadSoundBuffer(key);
   if (!buf) {
@@ -408,6 +487,8 @@ function stopRinging() {
     clearTimeout(autoStopId);
     autoStopId = null;
   }
+  hideRingToast();
+  stopTitleBlink();
   stopPreview();
 }
 
@@ -496,6 +577,7 @@ function setAlarm() {
   saveState();
 
   ensureAudioContext().catch(() => {});
+  ensureNotifyPermission().catch(() => {});
 }
 
 function cancelAlarm() {
@@ -571,7 +653,14 @@ windowEl.addEventListener("click", (e) => {
   previewToggle(key, btn).catch(() => {});
 });
 
-// Volume (optionnel)
+toastSnoozeBtn?.addEventListener("click", () => {
+  snooze(5);
+});
+toastStopBtn?.addEventListener("click", () => {
+  stopRinging();
+});
+
+// Volume
 volumeEl?.addEventListener("input", applyVolumeFromSlider);
 
 // ESC coupe tout
@@ -606,7 +695,7 @@ function activateIndexWithoutAnim(i: number) {
 }
 
 function restoreState() {
-  // volume (optionnel)
+  // volume
   if (volumeEl) {
     const v = Number(localStorage.getItem(LS_VOL) ?? "90");
     volumeEl.value = isNaN(v) ? "90" : String(v);
