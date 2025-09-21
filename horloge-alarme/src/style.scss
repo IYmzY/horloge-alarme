@@ -21,6 +21,7 @@ $font: "Inter", "SF Pro Text", "Segoe UI", Roboto, system-ui, -apple-system,
   @return color.mix(#ffffff, $base, $ratio);
 }
 
+/* ==== Reset & base ==== */
 * {
   margin: 0;
   padding: 0;
@@ -29,14 +30,10 @@ $font: "Inter", "SF Pro Text", "Segoe UI", Roboto, system-ui, -apple-system,
 :root {
   color-scheme: dark;
 }
-
 body {
   min-height: 100vh;
   font-family: $font;
   color: $fg;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -48,7 +45,6 @@ body {
   );
   transition: background 0.4s ease;
 }
-
 body:has(#app.alarm-active) {
   background: radial-gradient(
     1100px 750px at 18% 0%,
@@ -197,7 +193,6 @@ button {
     cursor: not-allowed;
   }
 }
-
 #setBtn {
   background-color: $accent;
   color: $ink;
@@ -286,7 +281,7 @@ button {
     .slide-window {
       position: relative;
       overflow: hidden;
-      min-height: 150px; /* hauteur stable */
+      min-height: 150px;
     }
 
     .sound-card {
@@ -302,8 +297,7 @@ button {
       padding: 16px;
       transform: translateX(100%);
       opacity: 0;
-      transition: transform 0.25s ease, opacity 0.25s ease,
-        background-color 0.18s;
+      transition: transform 0.25s ease, opacity 0.25s ease;
 
       .icon {
         font-size: 1.6rem;
@@ -312,7 +306,6 @@ button {
         font-size: 1rem;
         font-weight: 700;
       }
-
       .btn-preview {
         padding: 10px 12px;
         border-radius: 10px;
@@ -334,7 +327,6 @@ button {
           border-color: color.mix(#ffffff, $stroke, 28%);
         }
       }
-
       &[aria-hidden="true"] {
         pointer-events: none;
       }
@@ -355,7 +347,6 @@ button {
 /* ==== Global states ==== */
 #app.alarm-active #alarm {
   outline: 2px solid color.change(#6aa2ff, $alpha: 0.16);
-  outline-offset: 0;
 }
 #app.alarm-active #clock .time {
   text-shadow: 0 0 24px color.change(#6aa2ff, $alpha: 0.24);
@@ -366,5 +357,17 @@ button {
   color: $muted;
 }
 .hidden {
+  display: none !important;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Par sécurité UX : en état inactif, cacher le panneau actif et le statut */
+#app.alarm-inactive #alarm .alarm-active-panel {
+  display: none !important;
+}
+#app.alarm-inactive #alarm .status {
   display: none !important;
 }

@@ -47,7 +47,7 @@ const viewerEl = soundsSection.querySelector(".sound-viewer") as HTMLElement;
 const windowEl = viewerEl.querySelector(".slide-window") as HTMLElement;
 const cards = Array.from(windowEl.querySelectorAll<HTMLElement>(".sound-card"));
 const prevBtn = viewerEl.querySelector(".nav.prev") as HTMLButtonElement;
-const nextBtn = viewerEl.querySelector(".nav.next") as HTMLButtonButton;
+const nextBtn = viewerEl.querySelector(".nav.next") as HTMLButtonElement;
 const currentTitleEl = document.getElementById(
   "currentSoundTitle"
 ) as HTMLElement;
@@ -177,6 +177,11 @@ function setAppState(next: AppState) {
     appEl.classList.add("alarm-active");
     alarmForm.hidden = true;
     alarmActivePanel.hidden = false;
+
+    // 💡 focus visuel : scroll vers la carte alarme
+    document
+      .getElementById("alarm")
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
   } else {
     appEl.classList.add("alarm-inactive");
     appEl.classList.remove("alarm-active");
