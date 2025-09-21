@@ -9,17 +9,18 @@ $fg: #f5f7fa; // texte principal
 $muted: #a6adb9; // texte secondaire
 $accent: #ffffff; // action primaire (flat blanc)
 $danger: #ff4d4d; // action danger
-$ink: #0b0b0b; // noir pur utile pour contrastes
+$ink: #0b0b0b; // noir utile pour contrastes
+$shadow: rgba(0, 0, 0, 0.5);
 
 $font: "Inter", "SF Pro Text", "Segoe UI", Roboto, system-ui, -apple-system,
   Arial, sans-serif;
 // Optionnel: @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap");
 
 /* ========= Utils ========= */
-@function ring($c, $a: 0.22) {
+@function ring-shadow($c, $a: 0.22) {
   @return 0 0 0 3px color.change($c, $alpha: $a);
 }
-@function hover($base, $ratio: 10%) {
+@function hover($base, $ratio: 12%) {
   @return color.mix(#ffffff, $base, $ratio);
 }
 
@@ -53,7 +54,6 @@ body {
 }
 
 /* Fond dynamique selon état global */
-#app.alarm-active ~ body, /* fallback si besoin */
 body:has(#app.alarm-active) {
   background: radial-gradient(
     1100px 750px at 18% 0%,
@@ -160,7 +160,7 @@ main#app {
         &:focus {
           outline: none;
           border-color: hover($stroke, 22%);
-          box-shadow: ring($accent, 0.16);
+          box-shadow: ring-shadow($accent, 0.16);
         }
 
         &[readonly] {
@@ -244,7 +244,7 @@ button {
   }
   &:focus {
     outline: none;
-    box-shadow: ring($accent, 0.22);
+    box-shadow: ring-shadow($accent, 0.22);
   }
 }
 
@@ -259,7 +259,7 @@ button {
   }
   &:focus {
     outline: none;
-    box-shadow: ring($danger, 0.22);
+    box-shadow: ring-shadow($danger, 0.22);
   }
 }
 
@@ -287,14 +287,75 @@ button {
     }
   }
 
+  /* Wrapper + nav */
+  .carousel-wrap {
+    position: relative;
+    display: grid;
+    align-items: center;
+
+    .carousel-nav {
+      position: absolute;
+      top: 50%;
+      translate: 0 -50%;
+      z-index: 2;
+
+      height: 40px;
+      width: 40px;
+      border-radius: 50%;
+      border: 1px solid $stroke;
+      background: color.change(#ffffff, $alpha: 0.06);
+      backdrop-filter: blur(4px);
+      color: $fg;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 16px $shadow;
+      transition: background-color 0.18s ease, border-color 0.18s ease,
+        transform 0.06s ease;
+
+      &:hover {
+        background: color.change(#ffffff, $alpha: 0.12);
+      }
+      &:active {
+        transform: scale(0.98);
+      }
+      &:focus {
+        outline: none;
+        box-shadow: ring-shadow($accent, 0.18);
+      }
+
+      &.prev {
+        left: -8px;
+      }
+      &.next {
+        right: -8px;
+      }
+
+      @media (max-width: 480px) {
+        &.prev {
+          left: 4px;
+        }
+        &.next {
+          right: 4px;
+        }
+      }
+    }
+  }
+
+  /* Carrousel fluide */
   .carousel {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(180px, 1fr);
+    grid-auto-columns: minmax(190px, 1fr);
     gap: 12px;
+
     overflow-x: auto;
-    padding-bottom: 6px;
+    padding: 4px 6px 8px;
     scroll-snap-type: x mandatory;
+    scroll-behavior: smooth; /* fluidité */
+    scroll-padding: 6px;
+
+    /* inertie (mobile) */
+    -webkit-overflow-scrolling: touch;
 
     /* scrollbar discrète */
     &::-webkit-scrollbar {
@@ -320,7 +381,7 @@ button {
     gap: 10px;
     align-content: start;
     transition: border-color 0.18s ease, box-shadow 0.18s ease,
-      transform 0.08s ease;
+      transform 0.08s ease, background-color 0.18s ease;
 
     .icon {
       font-size: 1.4rem;
@@ -346,21 +407,20 @@ button {
         font-weight: 600;
         font-size: 0.95rem;
 
+        &:hover {
+          background: color.change(#ffffff, $alpha: 0.06);
+        }
         &:focus {
           outline: none;
-          box-shadow: ring($accent, 0.18);
+          box-shadow: ring-shadow($accent, 0.18);
         }
-      }
-
-      .btn-test:hover {
-        background: color.change(#ffffff, $alpha: 0.05);
-      }
-      .btn-choose:hover {
-        background: color.change(#ffffff, $alpha: 0.08);
       }
     }
 
-    /* état sélectionné */
+    &:hover {
+      background: #10131a;
+    }
+
     &.is-selected,
     &[aria-selected="true"] {
       border-color: color.mix($accent, $stroke, 55%);

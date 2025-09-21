@@ -1,7 +1,7 @@
 import "./style.scss";
 
 /* =========================================
-   Utils
+   Utils & date
 ========================================= */
 const pad = (n: number) => n.toString().padStart(2, "0");
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
@@ -46,12 +46,61 @@ const activeLabelEl = document.getElementById("activeLabel") as HTMLElement;
 const activeSoundEl = document.getElementById("activeSound") as HTMLElement;
 
 const soundsSection = document.getElementById("sounds") as HTMLElement;
+const carouselWrap = soundsSection.querySelector(
+  ".carousel-wrap"
+) as HTMLElement;
 const carouselEl = soundsSection.querySelector(".carousel") as HTMLElement;
+const prevBtn = carouselWrap.querySelector(
+  ".carousel-nav.prev"
+) as HTMLButtonElement;
+const nextBtn = carouselWrap.querySelector(
+  ".carousel-nav.next"
+) as HTMLButtonElement;
 
 /* =========================================
    State
 ========================================= */
 type AppState = "inactive" | "active";
+
+type SoundKey =
+  | "rooster"
+  | "trumpet"
+  | "firealarm"
+  | "electronic"
+  | "iphone"
+  | "morningflower"
+  | "funmix";
+
+const DEFAULT_SOUND: SoundKey = "rooster";
+
+const SOUND_FILES: Record<SoundKey, string> = {
+  rooster: "/sounds/alarm-rooster.mp3",
+  trumpet: "/sounds/military-trumpet.mp3",
+  firealarm: "/sounds/fire-alarm.mp3",
+  electronic: "/sounds/electronic.mp3",
+  iphone: "/sounds/iphone-alarm.mp3",
+  morningflower: "/sounds/morning-flower.mp3",
+  funmix: "/sounds/perfect-alarm.mp3",
+};
+
+function soundTitle(key: SoundKey): string {
+  switch (key) {
+    case "rooster":
+      return "Coq";
+    case "trumpet":
+      return "Trompette militaire";
+    case "firealarm":
+      return "Fire Alarm";
+    case "electronic":
+      return "Alarme électronique";
+    case "iphone":
+      return "Réveil iPhone (classique)";
+    case "morningflower":
+      return "Morning Flower (Samsung)";
+    case "funmix":
+      return "Fun Mix";
+  }
+}
 
 type AlarmState = {
   time: string; // "HH:MM"
@@ -63,6 +112,7 @@ type AlarmState = {
 
 let uiState: AppState = "inactive";
 let alarm: AlarmState | null = null;
+let selectedSound: SoundKey = DEFAULT_SOUND;
 
 /* =========================================
    Clock (tick aligné)
@@ -86,9 +136,7 @@ function tickAligned() {
   const now = new Date();
   renderClock(now);
   checkAlarm(now);
-  if (alarm?.active && now.getSeconds() % 5 === 0) {
-    updateStatus(now);
-  }
+  if (alarm?.active && now.getSeconds() % 5 === 0) updateStatus(now);
   const delay = 1000 - now.getMilliseconds();
   setTimeout(tickAligned, delay);
 }
@@ -144,47 +192,10 @@ function setAppState(next: AppState) {
 }
 
 /* =========================================
-   Sonneries: patterns & preview
-========================================= */
-type SoundKey = "rooster" | "bell" | "electro" | "trumpet" | "metal" | "fun";
-const DEFAULT_SOUND: SoundKey = "rooster";
-
-function soundTitle(key: SoundKey): string {
-  switch (key) {
-    case "rooster":
-      return "Coq";
-    case "bell":
-      return "Cloche";
-    case "electro":
-      return "Électronique";
-    case "trumpet":
-      return "Trompette";
-    case "metal":
-      return "Heavy Metal";
-    case "fun":
-      return "Fun";
-  }
-}
-
-let selectedSound: SoundKey = DEFAULT_SOUND; // son sélectionné via carrousel
-
-// Sélection visuelle dans le carrousel
-function setSelectedSoundCard(key: SoundKey) {
-  const cards = carouselEl.querySelectorAll<HTMLElement>(".sound-card");
-  cards.forEach((card) => {
-    const match = card.dataset.key === key;
-    card.classList.toggle("is-selected", match);
-    card.setAttribute("aria-selected", match ? "true" : "false");
-  });
-}
-
-/* =========================================
-   WebAudio (lazy) + patterns
+   WebAudio (lazy) + loader de samples
 ========================================= */
 let audioCtx: AudioContext | null = null;
-let ringing = false;
-let ringLoopId: number | null = null;
-let autoStopId: number | null = null;
+let masterGain: GainNode | null = null;
 
 async function ensureAudioContext(): Promise<AudioContext> {
   if (!audioCtx) {
@@ -194,113 +205,101 @@ async function ensureAudioContext(): Promise<AudioContext> {
   }
   const ctx = audioCtx!;
   if (ctx.state === "suspended") await ctx.resume();
+  if (!masterGain) {
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 1.0; // volume global (ajoute un slider si besoin)
+    masterGain.connect(ctx.destination);
+  }
   return ctx;
 }
 
-function tone(
-  freq: number,
-  dur = 0.15,
-  when = 0,
-  vol = 0.6,
-  attack = 0.004,
-  type: OscillatorType = "sine"
-) {
-  if (!audioCtx) return;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = type;
-  o.frequency.value = freq;
-  o.connect(g);
-  g.connect(audioCtx.destination);
+const soundBuffers = new Map<SoundKey, AudioBuffer>();
 
-  const t = audioCtx.currentTime + when;
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(vol, t + attack);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.start(t);
-  o.stop(t + dur + 0.05);
-}
-
-/** Patterns simples mais distinctifs pour chaque son */
-function playPattern(key: SoundKey) {
-  if (!audioCtx) return;
-
-  switch (key) {
-    case "rooster": {
-      // cocorico synthétique (saw/square mixé en étapes)
-      // approximation courte et non agressive
-      tone(660, 0.18, 0.0, 0.55, 0.004, "square");
-      tone(880, 0.2, 0.16, 0.55, 0.004, "sawtooth");
-      tone(740, 0.22, 0.34, 0.55, 0.004, "square");
-      break;
-    }
-    case "bell": {
-      // cloche: fondamentale + partiels qui décroissent
-      const base = 660;
-      [1, 2.01, 2.4, 3.8].forEach((m, i) =>
-        tone(base * m, 0.8 - i * 0.15, i * 0.02, 0.42 - i * 0.06, 0.003, "sine")
-      );
-      break;
-    }
-    case "electro": {
-      // arpège électronique
-      const base = 440;
-      [0, 0.15, 0.3, 0.45].forEach((off, i) =>
-        tone(base * Math.pow(1.122, i * 2), 0.18, off, 0.5, 0.002, "sawtooth")
-      );
-      break;
-    }
-    case "trumpet": {
-      // appel clairon simple
-      const seq = [523.25, 659.25, 784.0, 659.25, 523.25]; // C5 E5 G5 E5 C5
-      seq.forEach((f, i) => tone(f, 0.22, i * 0.22, 0.6, 0.002, "square"));
-      break;
-    }
-    case "metal": {
-      // petit riff agressif
-      const base = 196; // G3
-      [0, 0.12, 0.24, 0.36, 0.6].forEach((off, i) =>
-        tone(base * [1, 1.5, 2, 1.5, 1][i], 0.12, off, 0.65, 0.001, "sawtooth")
-      );
-      break;
-    }
-    case "fun": {
-      // cartoon / retro
-      [880, 660, 990].forEach((f, i) =>
-        tone(f, 0.12, i * 0.14, 0.55, 0.003, "triangle")
-      );
-      break;
-    }
+async function loadSoundBuffer(key: SoundKey): Promise<AudioBuffer | null> {
+  await ensureAudioContext();
+  if (soundBuffers.has(key)) return soundBuffers.get(key)!;
+  const url = SOUND_FILES[key];
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const arr = await res.arrayBuffer();
+    const buf = await audioCtx!.decodeAudioData(arr);
+    soundBuffers.set(key, buf);
+    return buf;
+  } catch (e) {
+    console.warn("Impossible de charger le son:", key, url, e);
+    return null;
   }
 }
 
-async function ringNow(key: SoundKey, label?: string) {
+/* =========================================
+   Preview & Ring (avec samples)
+========================================= */
+let currentPreviewNode: AudioBufferSourceNode | null = null;
+let ringing = false;
+let ringNode: AudioBufferSourceNode | null = null;
+let autoStopId: number | null = null;
+
+function stopPreview() {
+  try {
+    currentPreviewNode?.stop();
+  } catch {}
+  currentPreviewNode = null;
+}
+
+async function previewSound(key: SoundKey) {
+  await ensureAudioContext();
+  stopPreview();
+  const buf = await loadSoundBuffer(key);
+  if (!buf) return;
+  const src = audioCtx!.createBufferSource();
+  src.buffer = buf;
+  src.connect(masterGain!);
+  src.start(0);
+  currentPreviewNode = src;
+  src.onended = () => {
+    if (currentPreviewNode === src) currentPreviewNode = null;
+  };
+}
+
+async function ringNowWithSample(key: SoundKey, label?: string) {
   if (ringing) return;
   ringing = true;
   await ensureAudioContext();
 
-  // feedback UI (texte) — visuel “ringing” possible via classe si tu veux
   statusEl.textContent = `⏰ Alarme !${label ? " — " + label : ""}`;
 
-  // boucle pattern toutes les 2s (soft)
-  playPattern(key);
-  ringLoopId = window.setInterval(() => playPattern(key), 2000);
+  const buf = await loadSoundBuffer(key);
+  if (!buf) {
+    // fallback tout simple si le sample est indispo
+    statusEl.textContent += " (sample indisponible)";
+    autoStopId = window.setTimeout(stopRinging, 5000);
+    return;
+  }
 
-  // auto-stop 30s
+  const src = audioCtx!.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.connect(masterGain!);
+  src.start(0);
+
+  ringNode = src;
   autoStopId = window.setTimeout(stopRinging, 30_000);
 }
 
 function stopRinging() {
   if (!ringing) return;
   ringing = false;
-  if (ringLoopId) {
-    clearInterval(ringLoopId);
-    ringLoopId = null;
-  }
+  try {
+    ringNode?.stop();
+  } catch {}
+  ringNode = null;
   if (autoStopId) {
     clearTimeout(autoStopId);
     autoStopId = null;
   }
+  // coupe aussi un éventuel preview en cours
+  stopPreview();
 }
 
 /* =========================================
@@ -331,7 +330,7 @@ function setAlarm() {
   setAppState("active");
   updateStatus(new Date());
 
-  // gesture utilisateur : tente de débloquer l'audio
+  // gesture utilisateur : tentative de déblocage audio
   ensureAudioContext().catch(() => {});
 }
 
@@ -349,8 +348,8 @@ function cancelAlarm() {
 function checkAlarm(now = new Date()) {
   if (!alarm || !alarm.active) return;
   if (now >= alarm.nextTrigger) {
-    ringNow(alarm.soundKey, alarm.label).catch(() => {});
-    // récurrence quotidienne par défaut
+    ringNowWithSample(alarm.soundKey, alarm.label).catch(() => {});
+    // récurrence quotidienne
     alarm.nextTrigger = computeNextTrigger(
       alarm.time,
       new Date(now.getTime() + 1000)
@@ -360,8 +359,17 @@ function checkAlarm(now = new Date()) {
 }
 
 /* =========================================
-   Carousel interactions (preview / choose)
+   Carousel (preview / choose / nav)
 ========================================= */
+function setSelectedSoundCard(key: SoundKey) {
+  const cards = carouselEl.querySelectorAll<HTMLElement>(".sound-card");
+  cards.forEach((card) => {
+    const match = card.dataset.key === key;
+    card.classList.toggle("is-selected", match);
+    card.setAttribute("aria-selected", match ? "true" : "false");
+  });
+}
+
 function handleCarouselClick(e: Event) {
   const target = e.target as HTMLElement;
   const card = (target.closest(".sound-card") as HTMLElement) || null;
@@ -369,25 +377,38 @@ function handleCarouselClick(e: Event) {
   const key = card.dataset.key as SoundKey;
 
   if (target.matches('[data-action="preview"]')) {
-    ensureAudioContext()
-      .then(() => playPattern(key))
-      .catch(() => {});
+    previewSound(key).catch(() => {});
     return;
   }
-
   if (target.matches('[data-action="choose"]')) {
     selectedSound = key;
     setSelectedSoundCard(key);
     selectedSoundInput.value = soundTitle(key);
+    // petit feedback visuel possible ici si tu veux
     return;
   }
+}
+
+function scrollCarousel(direction: "prev" | "next") {
+  const card = carouselEl.querySelector<HTMLElement>(".sound-card");
+  const step = card ? card.getBoundingClientRect().width + 12 : 240;
+  const delta = direction === "next" ? step : -step;
+  carouselEl.scrollBy({ left: delta, behavior: "smooth" });
+}
+
+function updateCarouselNavDisabled() {
+  // (optionnel) désactive les flèches quand on est au bord
+  const maxScroll = carouselEl.scrollWidth - carouselEl.clientWidth;
+  const left = Math.round(carouselEl.scrollLeft);
+  prevBtn.disabled = left <= 0;
+  nextBtn.disabled = left >= maxScroll;
 }
 
 /* =========================================
    Events
 ========================================= */
 setBtn.addEventListener("click", () => {
-  if (uiState === "active") return; // pas d'overwrite
+  if (uiState === "active") return; // pas d’overwrite
   setAlarm();
 });
 
@@ -397,6 +418,19 @@ cancelBtn.addEventListener("click", () => {
 });
 
 carouselEl.addEventListener("click", handleCarouselClick);
+
+prevBtn.addEventListener("click", () => {
+  scrollCarousel("prev");
+  setTimeout(updateCarouselNavDisabled, 250);
+});
+nextBtn.addEventListener("click", () => {
+  scrollCarousel("next");
+  setTimeout(updateCarouselNavDisabled, 250);
+});
+carouselEl.addEventListener("scroll", () => {
+  // throttle léger
+  window.requestAnimationFrame(updateCarouselNavDisabled);
+});
 
 // ESC pour couper la sonnerie
 window.addEventListener("keydown", (e) => {
@@ -410,6 +444,7 @@ document.addEventListener("visibilitychange", () => {
     renderClock(now);
     checkAlarm(now);
     updateStatus(now);
+    updateCarouselNavDisabled();
   }
 });
 
@@ -417,7 +452,6 @@ document.addEventListener("visibilitychange", () => {
    Boot
 ========================================= */
 function initSelectedFromDOM() {
-  // lis la carte marquée .is-selected au démarrage
   const card = carouselEl.querySelector<HTMLElement>(".sound-card.is-selected");
   selectedSound = (card?.dataset.key as SoundKey) ?? DEFAULT_SOUND;
   setSelectedSoundCard(selectedSound);
@@ -432,7 +466,7 @@ function initUI() {
 
 initSelectedFromDOM();
 initUI();
-
 renderClock();
 updateStatus();
+updateCarouselNavDisabled();
 tickAligned();

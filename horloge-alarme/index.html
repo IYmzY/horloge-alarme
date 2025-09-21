@@ -17,7 +17,6 @@
       <section id="alarm" aria-label="Alarme">
         <header class="section-head">
           <h2>Alarme</h2>
-          <!-- état synthétique (ex: Active pour 07:30 — Coq) -->
           <p id="alarmStateText" class="state-text">
             Aucune alarme programmée.
           </p>
@@ -35,12 +34,12 @@
               <input
                 id="alarmLabel"
                 type="text"
-                placeholder="Réunion, pause…"
+                placeholder="Réveil, réunion…"
               />
             </div>
           </div>
 
-          <!-- Sélecteur de son choisi (relié au carrousel) -->
+          <!-- Son sélectionné (lié au carrousel) -->
           <div class="row">
             <div class="field">
               <label for="selectedSound">Sonnerie sélectionnée</label>
@@ -78,7 +77,6 @@
           </div>
         </div>
 
-        <!-- Statut détaillé (ex: Prochaine dans ~ X min) -->
         <p id="status" class="status">—</p>
       </section>
 
@@ -89,181 +87,234 @@
           <p class="muted">Prévisualisez et choisissez votre son.</p>
         </header>
 
-        <!-- Carrousel minimal (scroll horizontal) -->
-        <div class="carousel" role="listbox" aria-label="Sélection de sonnerie">
-          <!-- Exemple de carte sonnerie ; data-key correspondra au TS -->
-          <article
-            class="sound-card is-selected"
-            data-key="rooster"
-            role="option"
-            aria-selected="true"
+        <!-- Nav du carrousel (meilleure fluidité d’usage) -->
+        <div class="carousel-wrap" aria-label="Navigation carrousel">
+          <button
+            class="carousel-nav prev"
+            type="button"
+            data-carousel="prev"
+            aria-label="Précédent"
           >
-            <div class="icon" aria-hidden="true">🐓</div>
-            <h3 class="title">Coq</h3>
-            <div class="card-actions">
-              <button
-                class="btn-test"
-                type="button"
-                data-action="preview"
-                aria-label="Préécouter Coq"
-              >
-                ▶︎ Test
-              </button>
-              <button
-                class="btn-choose"
-                type="button"
-                data-action="choose"
-                aria-label="Choisir Coq"
-              >
-                Choisir
-              </button>
-            </div>
-          </article>
+            ◀
+          </button>
 
-          <article
-            class="sound-card"
-            data-key="bell"
-            role="option"
-            aria-selected="false"
+          <!-- Carrousel -->
+          <div
+            class="carousel"
+            role="listbox"
+            aria-label="Sélection de sonnerie"
+            tabindex="0"
           >
-            <div class="icon" aria-hidden="true">🔔</div>
-            <h3 class="title">Cloche</h3>
-            <div class="card-actions">
-              <button
-                class="btn-test"
-                type="button"
-                data-action="preview"
-                aria-label="Préécouter Cloche"
-              >
-                ▶︎ Test
-              </button>
-              <button
-                class="btn-choose"
-                type="button"
-                data-action="choose"
-                aria-label="Choisir Cloche"
-              >
-                Choisir
-              </button>
-            </div>
-          </article>
+            <!-- data-key = identifiant logique du son (utilisé en TS) -->
+            <article
+              class="sound-card is-selected"
+              data-key="rooster"
+              role="option"
+              aria-selected="true"
+            >
+              <div class="icon" aria-hidden="true">🐓</div>
+              <h3 class="title">Coq</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Coq"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Coq"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
 
-          <article
-            class="sound-card"
-            data-key="electro"
-            role="option"
-            aria-selected="false"
-          >
-            <div class="icon" aria-hidden="true">🎹</div>
-            <h3 class="title">Électronique</h3>
-            <div class="card-actions">
-              <button
-                class="btn-test"
-                type="button"
-                data-action="preview"
-                aria-label="Préécouter Électronique"
-              >
-                ▶︎ Test
-              </button>
-              <button
-                class="btn-choose"
-                type="button"
-                data-action="choose"
-                aria-label="Choisir Électronique"
-              >
-                Choisir
-              </button>
-            </div>
-          </article>
+            <article
+              class="sound-card"
+              data-key="trumpet"
+              role="option"
+              aria-selected="false"
+            >
+              <div class="icon" aria-hidden="true">🎺</div>
+              <h3 class="title">Trompette militaire</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Trompette militaire"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Trompette militaire"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
 
-          <article
-            class="sound-card"
-            data-key="trumpet"
-            role="option"
-            aria-selected="false"
-          >
-            <div class="icon" aria-hidden="true">🎺</div>
-            <h3 class="title">Trompette</h3>
-            <div class="card-actions">
-              <button
-                class="btn-test"
-                type="button"
-                data-action="preview"
-                aria-label="Préécouter Trompette"
-              >
-                ▶︎ Test
-              </button>
-              <button
-                class="btn-choose"
-                type="button"
-                data-action="choose"
-                aria-label="Choisir Trompette"
-              >
-                Choisir
-              </button>
-            </div>
-          </article>
+            <article
+              class="sound-card"
+              data-key="firealarm"
+              role="option"
+              aria-selected="false"
+            >
+              <div class="icon" aria-hidden="true">🚨</div>
+              <h3 class="title">Fire Alarm</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Fire Alarm"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Fire Alarm"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
 
-          <article
-            class="sound-card"
-            data-key="metal"
-            role="option"
-            aria-selected="false"
-          >
-            <div class="icon" aria-hidden="true">🤘</div>
-            <h3 class="title">Heavy Metal</h3>
-            <div class="card-actions">
-              <button
-                class="btn-test"
-                type="button"
-                data-action="preview"
-                aria-label="Préécouter Heavy Metal"
-              >
-                ▶︎ Test
-              </button>
-              <button
-                class="btn-choose"
-                type="button"
-                data-action="choose"
-                aria-label="Choisir Heavy Metal"
-              >
-                Choisir
-              </button>
-            </div>
-          </article>
+            <article
+              class="sound-card"
+              data-key="electronic"
+              role="option"
+              aria-selected="false"
+            >
+              <div class="icon" aria-hidden="true">🎹</div>
+              <h3 class="title">électronique</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Alarme électronique"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Alarme électronique"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
 
-          <article
-            class="sound-card"
-            data-key="fun"
-            role="option"
-            aria-selected="false"
+            <article
+              class="sound-card"
+              data-key="iphone"
+              role="option"
+              aria-selected="false"
+            >
+              <div class="icon" aria-hidden="true">📱</div>
+              <h3 class="title">Alarme iPhone</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Réveil iPhone"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Réveil iPhone"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
+
+            <article
+              class="sound-card"
+              data-key="morningflower"
+              role="option"
+              aria-selected="false"
+            >
+              <div class="icon" aria-hidden="true">🌼</div>
+              <h3 class="title">Morning Flower</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Morning Flower"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Morning Flower"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
+
+            <article
+              class="sound-card"
+              data-key="funmix"
+              role="option"
+              aria-selected="false"
+            >
+              <div class="icon" aria-hidden="true">💿</div>
+              <h3 class="title">Alarme Parfaite</h3>
+              <div class="card-actions">
+                <button
+                  class="btn-test"
+                  type="button"
+                  data-action="preview"
+                  aria-label="Préécouter Fun Mix"
+                >
+                  ▶︎ Test
+                </button>
+                <button
+                  class="btn-choose"
+                  type="button"
+                  data-action="choose"
+                  aria-label="Choisir Fun Mix"
+                >
+                  Choisir
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <button
+            class="carousel-nav next"
+            type="button"
+            data-carousel="next"
+            aria-label="Suivant"
           >
-            <div class="icon" aria-hidden="true">🎭</div>
-            <h3 class="title">Fun</h3>
-            <div class="card-actions">
-              <button
-                class="btn-test"
-                type="button"
-                data-action="preview"
-                aria-label="Préécouter Fun"
-              >
-                ▶︎ Test
-              </button>
-              <button
-                class="btn-choose"
-                type="button"
-                data-action="choose"
-                aria-label="Choisir Fun"
-              >
-                Choisir
-              </button>
-            </div>
-          </article>
+            ▶
+          </button>
         </div>
       </section>
     </main>
 
-    <!-- Script Vite -->
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
