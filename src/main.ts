@@ -657,7 +657,7 @@ toastSnoozeBtn?.addEventListener("click", () => {
   snooze(5);
 });
 toastStopBtn?.addEventListener("click", () => {
-  stopRinging();
+  cancelAlarm();
 });
 
 // Volume
