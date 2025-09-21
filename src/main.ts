@@ -17,6 +17,9 @@ const dateFmt = new Intl.DateTimeFormat("fr-FR", {
 const AUTO_STOP_MS = 60_000; // 1 minute de sonnerie max
 const AUTO_SNOOZE_MIN = 5; // auto snooze de 5 min
 
+// Notification permission
+const LS_NOTIFY_ASKED = "alarm-notify-asked-v1"; // pour ne pas spammer la demande
+
 /* =========================
    DOM
 ========================= */
@@ -82,8 +85,6 @@ type SoundKey =
   | "iphone"
   | "morningflower"
   | "funmix";
-
-const DEFAULT_SOUND: SoundKey = "rooster";
 
 const SOUND_FILES: Record<SoundKey, string> = {
   rooster: "/sounds/alarm-rooster.mp3",
@@ -312,14 +313,22 @@ async function loadSoundBuffer(key: SoundKey): Promise<AudioBuffer | null> {
    Notifications & attention grabbers
 ========================= */
 function canNotify(): boolean {
-  return "Notification" in window && Notification.permission !== "denied";
+  return "Notification" in window && Notification.permission === "granted";
 }
 
 async function ensureNotifyPermission(): Promise<void> {
   if (!("Notification" in window)) return;
-  if (Notification.permission === "default") {
+  if (Notification.permission !== "default") return; // déjà "granted" ou "denied"
+
+  // évite de redemander en boucle
+  const asked = localStorage.getItem(LS_NOTIFY_ASKED) === "1";
+  if (asked) return;
+
+  try {
+    await Notification.requestPermission();
+  } finally {
     try {
-      await Notification.requestPermission();
+      localStorage.setItem(LS_NOTIFY_ASKED, "1");
     } catch {}
   }
 }
@@ -386,7 +395,7 @@ function markBtnPlaying(btn: HTMLButtonElement) {
 function unmarkBtnPlaying(btn: HTMLButtonElement) {
   btn.classList.remove("is-playing");
   btn.removeAttribute("aria-pressed");
-  btn.textContent = "▶︎ Préécouter";
+  btn.textContent = "▶︎ Écouter";
 }
 
 function stopPreview() {
