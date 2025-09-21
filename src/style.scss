@@ -247,6 +247,10 @@ button {
   .current-note {
     color: $muted;
     font-size: 0.95rem;
+    #currentSoundTitle {
+      color: $fg;
+      font-weight: 600;
+    }
   }
 
   .sound-viewer {
@@ -349,6 +353,11 @@ button {
     label {
       color: $muted;
       font-size: 0.95rem;
+      #volumeValue {
+        font-weight: 600;
+        margin-left: 6px;
+        color: $fg;
+      }
     }
     input[type="range"] {
       width: 100%;
