@@ -13,6 +13,10 @@ const dateFmt = new Intl.DateTimeFormat("fr-FR", {
   day: "numeric",
 });
 
+// Auto-stop & auto-snooze
+const AUTO_STOP_MS = 60_000; // 1 minute de sonnerie max
+const AUTO_SNOOZE_MIN = 5; // auto snooze de 5 min
+
 /* =========================
    DOM
 ========================= */
@@ -435,7 +439,7 @@ async function ringNowWithSample(key: SoundKey, label?: string) {
   ringing = true;
   await ensureAudioContext();
 
-  stopPreview(); // pas de chevauchement
+  stopPreview(); // coupe la préécoute
 
   statusEl.textContent = `⏰ Alarme !${label ? " — " + label : ""}`;
   showRingToast(label);
@@ -466,7 +470,14 @@ async function ringNowWithSample(key: SoundKey, label?: string) {
 
   src.start(0);
   ringNode = src;
-  autoStopId = window.setTimeout(stopRinging, 30_000);
+  if (AUTO_STOP_MS > 0) {
+    autoStopId = window.setTimeout(() => {
+      // si ça sonne encore au bout d'1 min → auto-snooze
+      if (ringing) {
+        snooze(AUTO_SNOOZE_MIN);
+      }
+    }, AUTO_STOP_MS);
+  }
 }
 
 function stopRinging() {
