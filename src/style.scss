@@ -342,6 +342,38 @@ button {
       }
     }
   }
+  .volume {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+    label {
+      color: $muted;
+      font-size: 0.95rem;
+    }
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: #1a1c22;
+      border: 1px solid $stroke;
+      &::-webkit-slider-thumb {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: $accent;
+        border: 1px solid color.mix($accent, $stroke, 55%);
+      }
+      &::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: $accent;
+        border: 1px solid color.mix($accent, $stroke, 55%);
+      }
+    }
+  }
 }
 
 /* ==== Global states ==== */

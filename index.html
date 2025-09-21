@@ -60,6 +60,9 @@
             <button id="cancelBtn" type="button" data-action="cancel">
               Annuler l’alarme
             </button>
+            <button id="snoozeBtn" type="button" data-action="snooze">
+              Snooze 5 min
+            </button>
           </div>
         </div>
 
@@ -166,6 +169,17 @@
           >
             ▶
           </button>
+        </div>
+        <div class="volume">
+          <label for="volume">Volume</label>
+          <input
+            id="volume"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value="90"
+          />
         </div>
 
         <p class="current-note">
