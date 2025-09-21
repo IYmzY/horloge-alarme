@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Horloge + Alarme</title>
+  </head>
+  <body>
+    <main id="app" class="alarm-inactive" aria-live="polite">
+      <!-- Horloge -->
+      <section id="clock" aria-label="Horloge">
+        <h1 id="time" class="time">--:--:--</h1>
+        <p id="date" class="date">—</p>
+      </section>
+
+      <!-- Alarme -->
+      <section id="alarm" aria-label="Alarme">
+        <header class="section-head">
+          <h2>Alarme</h2>
+          <!-- état synthétique (ex: Active pour 07:30 — Coq) -->
+          <p id="alarmStateText" class="state-text">
+            Aucune alarme programmée.
+          </p>
+        </header>
+
+        <!-- Formulaire quand INACTIVE -->
+        <form id="alarmForm" class="alarm-form" autocomplete="off">
+          <div class="row two">
+            <div class="field">
+              <label for="alarmTime">Heure</label>
+              <input id="alarmTime" type="time" step="60" required />
+            </div>
+            <div class="field">
+              <label for="alarmLabel">Label (optionnel)</label>
+              <input
+                id="alarmLabel"
+                type="text"
+                placeholder="Réunion, pause…"
+              />
+            </div>
+          </div>
+
+          <!-- Sélecteur de son choisi (relié au carrousel) -->
+          <div class="row">
+            <div class="field">
+              <label for="selectedSound">Sonnerie sélectionnée</label>
+              <input
+                id="selectedSound"
+                type="text"
+                value="Coq"
+                readonly
+                aria-readonly="true"
+              />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="setBtn" type="button" data-action="set">
+              Programmer
+            </button>
+          </div>
+        </form>
+
+        <!-- Panneau quand ACTIVE -->
+        <div id="alarmActivePanel" class="alarm-active-panel" hidden>
+          <div class="summary">
+            <p>
+              <strong id="activeTime">--:--</strong>
+              <span id="activeLabel" class="muted"></span>
+              <span class="sep">•</span>
+              <span id="activeSound">Coq</span>
+            </p>
+          </div>
+          <div class="actions">
+            <button id="cancelBtn" type="button" data-action="cancel">
+              Annuler l’alarme
+            </button>
+          </div>
+        </div>
+
+        <!-- Statut détaillé (ex: Prochaine dans ~ X min) -->
+        <p id="status" class="status">—</p>
+      </section>
+
+      <!-- Sonneries -->
+      <section id="sounds" aria-label="Sonneries">
+        <header class="section-head">
+          <h2>Sonneries</h2>
+          <p class="muted">Prévisualisez et choisissez votre son.</p>
+        </header>
+
+        <!-- Carrousel minimal (scroll horizontal) -->
+        <div class="carousel" role="listbox" aria-label="Sélection de sonnerie">
+          <!-- Exemple de carte sonnerie ; data-key correspondra au TS -->
+          <article
+            class="sound-card is-selected"
+            data-key="rooster"
+            role="option"
+            aria-selected="true"
+          >
+            <div class="icon" aria-hidden="true">🐓</div>
+            <h3 class="title">Coq</h3>
+            <div class="card-actions">
+              <button
+                class="btn-test"
+                type="button"
+                data-action="preview"
+                aria-label="Préécouter Coq"
+              >
+                ▶︎ Test
+              </button>
+              <button
+                class="btn-choose"
+                type="button"
+                data-action="choose"
+                aria-label="Choisir Coq"
+              >
+                Choisir
+              </button>
+            </div>
+          </article>
+
+          <article
+            class="sound-card"
+            data-key="bell"
+            role="option"
+            aria-selected="false"
+          >
+            <div class="icon" aria-hidden="true">🔔</div>
+            <h3 class="title">Cloche</h3>
+            <div class="card-actions">
+              <button
+                class="btn-test"
+                type="button"
+                data-action="preview"
+                aria-label="Préécouter Cloche"
+              >
+                ▶︎ Test
+              </button>
+              <button
+                class="btn-choose"
+                type="button"
+                data-action="choose"
+                aria-label="Choisir Cloche"
+              >
+                Choisir
+              </button>
+            </div>
+          </article>
+
+          <article
+            class="sound-card"
+            data-key="electro"
+            role="option"
+            aria-selected="false"
+          >
+            <div class="icon" aria-hidden="true">🎹</div>
+            <h3 class="title">Électronique</h3>
+            <div class="card-actions">
+              <button
+                class="btn-test"
+                type="button"
+                data-action="preview"
+                aria-label="Préécouter Électronique"
+              >
+                ▶︎ Test
+              </button>
+              <button
+                class="btn-choose"
+                type="button"
+                data-action="choose"
+                aria-label="Choisir Électronique"
+              >
+                Choisir
+              </button>
+            </div>
+          </article>
+
+          <article
+            class="sound-card"
+            data-key="trumpet"
+            role="option"
+            aria-selected="false"
+          >
+            <div class="icon" aria-hidden="true">🎺</div>
+            <h3 class="title">Trompette</h3>
+            <div class="card-actions">
+              <button
+                class="btn-test"
+                type="button"
+                data-action="preview"
+                aria-label="Préécouter Trompette"
+              >
+                ▶︎ Test
+              </button>
+              <button
+                class="btn-choose"
+                type="button"
+                data-action="choose"
+                aria-label="Choisir Trompette"
+              >
+                Choisir
+              </button>
+            </div>
+          </article>
+
+          <article
+            class="sound-card"
+            data-key="metal"
+            role="option"
+            aria-selected="false"
+          >
+            <div class="icon" aria-hidden="true">🤘</div>
+            <h3 class="title">Heavy Metal</h3>
+            <div class="card-actions">
+              <button
+                class="btn-test"
+                type="button"
+                data-action="preview"
+                aria-label="Préécouter Heavy Metal"
+              >
+                ▶︎ Test
+              </button>
+              <button
+                class="btn-choose"
+                type="button"
+                data-action="choose"
+                aria-label="Choisir Heavy Metal"
+              >
+                Choisir
+              </button>
+            </div>
+          </article>
+
+          <article
+            class="sound-card"
+            data-key="fun"
+            role="option"
+            aria-selected="false"
+          >
+            <div class="icon" aria-hidden="true">🎭</div>
+            <h3 class="title">Fun</h3>
+            <div class="card-actions">
+              <button
+                class="btn-test"
+                type="button"
+                data-action="preview"
+                aria-label="Préécouter Fun"
+              >
+                ▶︎ Test
+              </button>
+              <button
+                class="btn-choose"
+                type="button"
+                data-action="choose"
+                aria-label="Choisir Fun"
+              >
+                Choisir
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Script Vite -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
